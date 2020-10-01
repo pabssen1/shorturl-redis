@@ -7,13 +7,18 @@
 <script>
 import "@/animation-helpers/redirect";
 import { requestsMixin } from "@/mixins/requestMixins";
+import { userShortLinks, firebase } from "@/firebase";
 
 export default {
   name: "Redirect",
   mixins: [requestsMixin],
   async mounted() {
-    var id = this.$route.params.id;
-    var { redirectUrl } = await this.getUrl(id);
+    var shortId = this.$route.params.id;
+    var { redirectUrl } = await this.getUrl(shortId);
+    userShortLinks.doc(shortId).update({
+      clicks: firebase.firestore.FieldValue.increment(1)
+    });
+
     console.log(redirectUrl);
     var url = new URL(redirectUrl);
     window.location.replace(url.href);
