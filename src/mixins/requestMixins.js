@@ -8,7 +8,7 @@ export const requestsMixin = {
       return response.data;
     },
     addUrl(url) {
-      return axios.post(`${APIURL}/shorten`, { main_url: url });
+      return axios.post(`${APIURL}/url/add`, { main_url: url });
     }
     // editUrl(data) {
     //   return axios.put();
