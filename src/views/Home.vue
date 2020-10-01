@@ -10,16 +10,23 @@
       <b-col cols="12" md="6" align-self="center">
         <b-form @submit.prevent="generateShortUrl" v-if="!shortId">
           <div class="text-input">
-            <input
+            <b-form-input
               type="text"
               id="input1"
               v-model="originalUrl"
               placeholder="Type or paste any URL!"
+              pattern="[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)"
+              title="Invalid URL"
               required
             />
             <label for="input1">URL</label>
           </div>
-          <b-button variant="dark" class="mt-2" type="submit">
+          <b-button
+            variant="dark"
+            class="mt-2"
+            type="submit"
+            :disabled="loading"
+          >
             Shorten
           </b-button>
         </b-form>
@@ -55,6 +62,64 @@
     </b-row>
   </b-container>
 </template>
+
+<script>
+import { userShortLinks } from "@/firebase";
+import { requestsMixin } from "@/mixins/requestMixins";
+export default {
+  data() {
+    return {
+      originalUrl: String(),
+      shortId: null,
+      loading: Boolean(false),
+      error: String()
+    };
+  },
+  components: {
+    Heading: () => import("@/components/Heading.vue"),
+    Header: () => import("@/components/Header.vue")
+  },
+  mixins: [requestsMixin],
+  name: "Home",
+  methods: {
+    async generateShortUrl() {
+      try {
+        this.loading = true;
+        const res = await this.addUrl(this.originalUrl);
+        console.log(res);
+        const { shortId, redirectUrl } = res.data;
+        console.log(shortId);
+        userShortLinks.doc(shortId).set({
+          uid: this.$store.state.user.uid,
+          clicks: Number(0),
+          url: redirectUrl
+        });
+
+        this.shortId = shortId;
+        this.loading = false;
+      } catch (error) {
+        this.error = error;
+        this.loading = false;
+      }
+    },
+    clear() {
+      this.originalUrl = null;
+      this.shortId = null;
+      this.error = null;
+      this.loading = false;
+    }
+  },
+  computed: {
+    getHost() {
+      return window.location.origin;
+    }
+  },
+  created() {
+    document.title = "ShortR | Free URL Shortener";
+  }
+};
+</script>
+
 <style>
 body {
   background-image: url("/img/background.svg");
@@ -124,53 +189,3 @@ body {
   }
 }
 </style>
-
-<script>
-import { requestsMixin } from "@/mixins/requestMixins";
-export default {
-  data() {
-    return {
-      originalUrl: String(),
-      shortId: null,
-      loading: Boolean(false),
-      error: String()
-    };
-  },
-  components: {
-    Heading: () => import("@/components/Heading.vue"),
-    Header: () => import("@/components/Header.vue")
-  },
-  mixins: [requestsMixin],
-  name: "Home",
-  methods: {
-    async generateShortUrl() {
-      console.log(this.originalUrl);
-      try {
-        this.loading = true;
-        const res = await this.addUrl(this.originalUrl);
-        const { shortId } = res.data;
-        console.log(shortId);
-
-        this.shortId = shortId;
-        this.loading = false;
-      } catch (error) {
-        this.error = error;
-        this.loading = false;
-      }
-    },
-    clear() {
-      this.originalUrl = null;
-      this.shortId = null;
-      this.error = null;
-    }
-  },
-  computed: {
-    getHost() {
-      return window.location.origin;
-    }
-  },
-  created() {
-    document.title = "ShortR | Free URL Shortener";
-  }
-};
-</script>
